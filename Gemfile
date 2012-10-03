@@ -1,4 +1,11 @@
 source :rubygems
 
-# Specify your gem's dependencies in ruby-duration.gemspec
 gemspec
+
+group :development do
+  gem 'rake'
+end
+
+group :test do
+  gem 'rake'
+end

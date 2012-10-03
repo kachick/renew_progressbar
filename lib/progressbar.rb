@@ -7,10 +7,14 @@
 #
 # You can redistribute it and/or modify it under the terms
 # of Ruby's license.
-#
+# ------------------------------------------------------------------
+# Modified 2009-2012 Jose Peleteiro
+# Modified 2012 Kenichi Kamiya
 
 class ProgressBar
-  VERSION = "0.11.0"
+
+  VERSION = '0.12.a'.freeze
+  DEFAULT_WIDTH = 80
 
   def initialize (title, total, out = STDERR)
     @title = title
@@ -36,7 +40,64 @@ class ProgressBar
   attr_accessor :start_time
   attr_writer   :bar_mark
 
-private
+  def clear
+    @out.print "\r"
+    @out.print(" " * (get_term_width - 1))
+    @out.print "\r"
+  end
+
+  def finish
+    @current = @total
+    @finished_p = true
+    show
+  end
+
+  def finished?
+    @finished_p
+  end
+
+  def file_transfer_mode
+    @format_arguments = [:title, :percentage, :bar, :stat_for_file_transfer]
+  end
+
+  def long_running
+    @format_arguments = [:title, :percentage, :bar, :stat_for_long_run]
+  end
+
+  def format= (format)
+    @format = format
+  end
+
+  def format_arguments= (arguments)
+    @format_arguments = arguments
+  end
+
+  def halt
+    @finished_p = true
+    show
+  end
+
+  def inc (step = 1)
+    @current += step
+    @current = @total if @current > @total
+    show_if_needed
+    @previous = @current
+  end
+
+  def set (count)
+    if count < 0 || count > @total
+      raise "invalid count: #{count} (total: #{@total})"
+    end
+    @current = count
+    show_if_needed
+    @previous = @current
+  end
+
+  def inspect
+    "#<ProgressBar:#{@current}/#{@total}>"
+  end
+
+  private
 
   def fmt_bar
     bar_width = do_percentage * @terminal_width / 100
@@ -154,7 +215,6 @@ private
     end
   end
 
-  DEFAULT_WIDTH = 80
   def get_term_width
     if ENV['COLUMNS'] =~ /^\d+$/
       ENV['COLUMNS'].to_i
@@ -178,9 +238,11 @@ private
       method = sprintf("fmt_%s", method)
       send(method)
     }
+
     line = sprintf(@format, *arguments)
 
     width = get_term_width
+
     if line.length == width - 1
       @out.print(line + eol)
       @out.flush
@@ -191,6 +253,7 @@ private
       @terminal_width += width - line.length + 1
       show
     end
+
     @previous_time = Time.now
   end
 
@@ -210,69 +273,4 @@ private
     end
   end
 
-public
-
-  def clear
-    @out.print "\r"
-    @out.print(" " * (get_term_width - 1))
-    @out.print "\r"
-  end
-
-  def finish
-    @current = @total
-    @finished_p = true
-    show
-  end
-
-  def finished?
-    @finished_p
-  end
-
-  def file_transfer_mode
-    @format_arguments = [:title, :percentage, :bar, :stat_for_file_transfer]
-  end
-
-  def long_running
-    @format_arguments = [:title, :percentage, :bar, :stat_for_long_run]
-  end
-
-  def format= (format)
-    @format = format
-  end
-
-  def format_arguments= (arguments)
-    @format_arguments = arguments
-  end
-
-  def halt
-    @finished_p = true
-    show
-  end
-
-  def inc (step = 1)
-    @current += step
-    @current = @total if @current > @total
-    show_if_needed
-    @previous = @current
-  end
-
-  def set (count)
-    if count < 0 || count > @total
-      raise "invalid count: #{count} (total: #{@total})"
-    end
-    @current = count
-    show_if_needed
-    @previous = @current
-  end
-
-  def inspect
-    "#<ProgressBar:#{@current}/#{@total}>"
-  end
-
-end
-
-class ReversedProgressBar < ProgressBar
-  def do_percentage
-    100 - super
-  end
 end

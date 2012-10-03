@@ -1,7 +1,10 @@
-require 'test/unit'
-require 'progressbar'
+$VERBOSE = true
 
-class ProgressBarTest < Test::Unit::TestCase
+require_relative '../lib/progressbar'
+require_relative '../lib/reversedprogressbar'
+
+class Example_ProgressBar
+
   SleepUnit = 0.01
 
   def do_make_progress_bar (title, total)
@@ -106,10 +109,23 @@ class ProgressBarTest < Test::Unit::TestCase
     }
     pbar.finish
   end
+
 end
 
-class ReversedProgressBarTest < ProgressBarTest
+example = Example_ProgressBar.new
+example.methods.grep(/\Atest_/).each do |m|
+  example.__send__ m
+end
+
+class Example_ReversedProgressBar < Example_ProgressBar
+
   def do_make_progress_bar (title, total)
     ReversedProgressBar.new(title, total)
   end
+
+end
+
+example = Example_ReversedProgressBar.new
+example.methods.grep(/\Atest_/).each do |m|
+  example.__send__ m
 end
