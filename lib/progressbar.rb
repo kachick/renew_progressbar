@@ -17,24 +17,24 @@ class ProgressBar
   VERSION = '0.12.a'.freeze
   DEFAULT_WIDTH = 80
   TITLE_WIDTH = 14
-  FORMAT = "%-#{TITLE_WIDTH}s %3d%% %s %s".freeze
-
-  attr_reader   :title
   attr_reader   :current
   attr_reader   :total
   
   attr_accessor :start_time
   
-  attr_writer   :bar_mark
+  attr_writer   :bar_char
   #~ attr_writer   :format
   attr_writer   :format_arguments
 
+  # @param [String, #to_str] title
+  # @param [Integer, #to_int] total
+  # @param [IO] out
   def initialize(title, total, out=STDERR)
-    @title = title
-    @total = total
+    @title = title.to_str
+    @total = total.to_int
     @out = out
     @terminal_width = DEFAULT_WIDTH
-    @bar_mark = 'o'.freeze
+    @bar_char = 'o'.freeze
     @current = 0
     @previous = 0
     @finished_p = false
@@ -47,11 +47,23 @@ class ProgressBar
     clear
     show
   end
+  
+  # @return [String]
+  def title
+    @title.dup
+  end
+  
+  
+  def bar_char=(str)
+    raise TypeError unless str.length == 1
+    @bar_char = str.dup.freeze
+    str
+  end
 
   # @return [void]
   def clear
     @out.print "\r"
-    @out.print(' ' * (term_width - 1))
+    @out.print ' ' * (term_width - 1)
     @out.print "\r"
     
     nil
@@ -94,26 +106,30 @@ class ProgressBar
     @previous = @current
   end
 
-  def set(count)
-    if (count < 0) || (count > @total)
-      raise Error, "invalid count: #{count} (total: #{@total})"
+  # @param [Integer] num
+  # @return [num]
+  def count=(num)
+    int = num.to_int
+    if (int < 0) || (int > @total)
+      raise Error, "invalid count: #{int} (total: #{@total})"
     end
 
-    @current = count
+    @current = int
     show_if_needed
     @previous = @current
+    int
   end
 
   # @return [String]
   def inspect
-    "#<ProgressBar:#{@current}/#{@total}>"
+    "#<ProgressBar: #{@current}/#{@total}>"
   end
 
   private
 
   # @return [String]
   def fmt_bar
-    "|#{@bar_mark * bar_width}#{' ' *  (@terminal_width - bar_width)}|"
+    "|#{@bar_char * bar_width}#{' ' *  (@terminal_width - bar_width)}|"
   end
 
   # @return [Integer]
@@ -163,7 +179,7 @@ class ProgressBar
 
   # @return [String]
   def fmt_transfer_rate
-    sprintf("%s/s", fmt_bytes_for(bytes_per_second))
+    "#{fmt_bytes_for bytes_per_second}/s"
   end
   
   # @return [Float]
@@ -193,7 +209,7 @@ class ProgressBar
       "ETA:  --:--:--"
     else
       _elapsed = elapsed
-      eta = _elapsed * @total / @current - _elapsed;
+      eta = _elapsed * @total / @current - _elapsed
       "ETA: #{fmt_interval_for eta}"
     end
   end
@@ -268,30 +284,37 @@ class ProgressBar
   def shell_command_exists?(command)
     ENV.fetch('PATH').split(File::PATH_SEPARATOR).any?{|d| File.exists? File.join(d, command) }
   end
-
-  # @return [void]
-  def show
+  
+  # @return [String]
+  def fmt_line
     arguments = @format_arguments.map {|method|
       __send__ :"fmt_#{method}"
     }
 
-    line = sprintf(FORMAT, *arguments)
+    sprintf("%-#{TITLE_WIDTH}s %3d%% %s %s", *arguments)
+  end
 
+  # @return [void]
+  def show
+    line = fmt_line
     width = term_width
 
-    if line.length == width - 1
+    case line.length
+    when ->n{n == width - 1}
       @out.print(line + eol)
       @out.flush
-    elsif line.length >= width
+    when ->n{n >= width}
       @terminal_width = [@terminal_width - (line.length - width + 1), 0].max
       if @terminal_width == 0
         @out.print(line + eol)
       else
         show
       end
-    else # line.length < width - 1
+    when ->n{n < width - 1}
       @terminal_width += width - line.length + 1
       show
+    else
+      raise 'must not happen'
     end
 
     @previous_time = Time.now

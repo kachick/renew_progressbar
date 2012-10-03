@@ -16,7 +16,7 @@ class Example_ProgressBar
     pbar = do_make_progress_bar("test(bytes)", total)
     pbar.file_transfer_mode
     0.step(total, 2**14) {|x|
-      pbar.set(x)
+      pbar.count = x
       sleep(SleepUnit)
     }
     pbar.finish
@@ -67,8 +67,8 @@ class Example_ProgressBar
     total = 100
     pbar = do_make_progress_bar("test(invalid set)", total)
     begin
-      pbar.set(200)
-    rescue RuntimeError => e
+      pbar.count = 200
+    rescue ProgressBar::Error => e
       puts e.message
     end
   end
@@ -78,7 +78,7 @@ class Example_ProgressBar
     pbar = do_make_progress_bar("test(set)", total)
     (1..total).find_all {|x| x % 10 == 0}.each {|x|
       sleep(SleepUnit)
-      pbar.set(x)
+      pbar.count = x
     }
     pbar.finish
   end
@@ -87,7 +87,7 @@ class Example_ProgressBar
     total = 100000
     pbar = do_make_progress_bar("test(slow)", total)
     0.step(500, 1) {|x|
-      pbar.set(x)
+      pbar.count = x
       sleep(SleepUnit)
     }
     pbar.halt
