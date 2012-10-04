@@ -1,14 +1,11 @@
-require 'bundler'
-Bundler::GemHelper.install_tasks
-
-task :default => :test
+#!/usr/bin/env rake
+require 'bundler/gem_tasks'
 
 require 'rake/testtask'
-Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/test.rb'
-  test.verbose = true
+
+task default: [:test]
+
+Rake::TestTask.new do |tt|
+  tt.verbose = true
 end
 
-require 'yard'
-YARD::Rake::YardocTask.new
