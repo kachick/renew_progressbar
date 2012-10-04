@@ -1,7 +1,10 @@
-require 'test/unit'
-require 'progressbar'
+$VERBOSE = true
 
-class ProgressBarTest < Test::Unit::TestCase
+require_relative '../lib/progressbar'
+require_relative '../lib/reversedprogressbar'
+
+class Example_ProgressBar
+
   SleepUnit = 0.01
 
   def do_make_progress_bar (title, total)
@@ -13,7 +16,7 @@ class ProgressBarTest < Test::Unit::TestCase
     pbar = do_make_progress_bar("test(bytes)", total)
     pbar.file_transfer_mode
     0.step(total, 2**14) {|x|
-      pbar.set(x)
+      pbar.count = x
       sleep(SleepUnit)
     }
     pbar.finish
@@ -64,8 +67,8 @@ class ProgressBarTest < Test::Unit::TestCase
     total = 100
     pbar = do_make_progress_bar("test(invalid set)", total)
     begin
-      pbar.set(200)
-    rescue RuntimeError => e
+      pbar.count = 200
+    rescue ProgressBar::Error => e
       puts e.message
     end
   end
@@ -75,7 +78,7 @@ class ProgressBarTest < Test::Unit::TestCase
     pbar = do_make_progress_bar("test(set)", total)
     (1..total).find_all {|x| x % 10 == 0}.each {|x|
       sleep(SleepUnit)
-      pbar.set(x)
+      pbar.count = x
     }
     pbar.finish
   end
@@ -84,7 +87,7 @@ class ProgressBarTest < Test::Unit::TestCase
     total = 100000
     pbar = do_make_progress_bar("test(slow)", total)
     0.step(500, 1) {|x|
-      pbar.set(x)
+      pbar.count = x
       sleep(SleepUnit)
     }
     pbar.halt
@@ -106,10 +109,23 @@ class ProgressBarTest < Test::Unit::TestCase
     }
     pbar.finish
   end
+
 end
 
-class ReversedProgressBarTest < ProgressBarTest
+example = Example_ProgressBar.new
+example.methods.grep(/\Atest_/).each do |m|
+  example.__send__ m
+end
+
+class Example_ReversedProgressBar < Example_ProgressBar
+
   def do_make_progress_bar (title, total)
     ReversedProgressBar.new(title, total)
   end
+
+end
+
+example = Example_ReversedProgressBar.new
+example.methods.grep(/\Atest_/).each do |m|
+  example.__send__ m
 end
